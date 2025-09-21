@@ -589,8 +589,9 @@ def test_error_handling():
     results.add_pass("Error Handling - Unauthorized Access")
     
     # Test duplicate product code
+    unique_code = f"DUPLICATE-{uuid.uuid4().hex[:8].upper()}"
     duplicate_product = {
-        "code": "DUPLICATE-CODE",
+        "code": unique_code,
         "name": "Test Product",
         "brand": "Test Brand",
         "category": "Test Category",

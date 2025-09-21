@@ -360,8 +360,7 @@ def test_product_management():
     results.add_pass("Update Product")
     
     # Test update product status
-    status_data = {"status": "reserved"}
-    data, error = make_request('PUT', f'/products/{test_product_id}/status', status_data, headers=headers)
+    data, error = make_request('PUT', f'/products/{test_product_id}/status?status=reserved', headers=headers)
     if error:
         results.add_fail("Update Product Status", error)
         return False
@@ -373,8 +372,7 @@ def test_product_management():
     results.add_pass("Update Product Status")
     
     # Reset status to available for transaction test
-    status_data = {"status": "available"}
-    data, error = make_request('PUT', f'/products/{test_product_id}/status', status_data, headers=headers)
+    data, error = make_request('PUT', f'/products/{test_product_id}/status?status=available', headers=headers)
     if error:
         results.add_fail("Reset Product Status", error)
         return False

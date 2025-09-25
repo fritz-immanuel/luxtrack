@@ -1044,8 +1044,12 @@ def main():
         test_authentication,
         test_user_management,
         test_customer_management,
+        test_sources_management,
         test_product_management,
+        test_enhanced_product_management,
         test_transaction_system,
+        test_enhanced_detail_endpoints,
+        test_updated_dashboard,
         test_dashboard_analytics,
         test_audit_logging,
         test_error_handling

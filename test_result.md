@@ -102,7 +102,7 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-user_problem_statement: "Test the LuxTrack MVP backend API thoroughly. I have implemented a comprehensive luxury goods inventory and sales tracking system with authentication, user management, customer management, product management, transaction system, dashboard analytics, and audit logging."
+user_problem_statement: "Test the enhanced LuxTrack backend with new features: Sources/Consigners Management, Enhanced Product Management with source_id and multiple images, Enhanced Detail Endpoints, and Updated Dashboard with sources count."
 
 backend:
   - task: "Authentication System"

@@ -112,6 +112,32 @@ class CustomerCreate(BaseModel):
     address: Optional[str] = None
     notes: Optional[str] = None
 
+class Source(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    source_type: SourceType
+    contact_person: Optional[str] = None
+    email: Optional[EmailStr] = None
+    phone: Optional[str] = None
+    address: Optional[str] = None
+    commission_rate: Optional[float] = None  # For consigners
+    payment_terms: Optional[str] = None
+    notes: Optional[str] = None
+    is_active: bool = True
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class SourceCreate(BaseModel):
+    name: str
+    source_type: SourceType
+    contact_person: Optional[str] = None
+    email: Optional[EmailStr] = None
+    phone: Optional[str] = None
+    address: Optional[str] = None
+    commission_rate: Optional[float] = None
+    payment_terms: Optional[str] = None
+    notes: Optional[str] = None
+
 class Product(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     code: str

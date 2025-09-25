@@ -35,6 +35,7 @@ auth_token = None
 test_customer_id = None
 test_product_id = None
 test_transaction_id = None
+test_source_id = None
 admin_user_id = None
 
 class TestResults:

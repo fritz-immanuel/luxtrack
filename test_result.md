@@ -295,7 +295,13 @@ metadata:
   run_ui: false
 
 test_plan:
-  current_focus: []
+  current_focus:
+    - "Sources/Consigners Management"
+    - "Enhanced Product Management with Source Integration"
+    - "Enhanced Product Detail Endpoint"
+    - "Enhanced Customer Detail Endpoint"
+    - "Enhanced Transaction Detail Endpoint"
+    - "Updated Dashboard with Sources Count"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"

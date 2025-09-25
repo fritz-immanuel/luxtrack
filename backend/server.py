@@ -150,7 +150,8 @@ class Product(BaseModel):
     selling_price: Optional[float] = None
     description: Optional[str] = None
     images: List[str] = []  # Base64 encoded images
-    seller_id: Optional[str] = None  # Customer who sold to us
+    seller_id: Optional[str] = None  # Customer who sold to us (deprecated, use source_id)
+    source_id: Optional[str] = None  # Source/Consigner who provided the product
     created_by: str  # User who created the record
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -165,7 +166,8 @@ class ProductCreate(BaseModel):
     selling_price: Optional[float] = None
     description: Optional[str] = None
     images: List[str] = []
-    seller_id: Optional[str] = None
+    seller_id: Optional[str] = None  # Keep for backward compatibility
+    source_id: Optional[str] = None
 
 class Transaction(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))

@@ -309,3 +309,5 @@ test_plan:
 agent_communication:
     - agent: "testing"
       message: "Comprehensive backend API testing completed successfully. All 26 test cases passed including authentication, user management, customer management, product management, transaction system, dashboard analytics, audit logging, and error handling. Fixed missing bcrypt dependency during testing. Backend API is fully functional and ready for production use."
+    - agent: "main"
+      message: "Enhanced LuxTrack backend with new features: Sources/Consigners Management, Enhanced Product Management with source_id and multiple images, Enhanced Detail Endpoints, and Updated Dashboard. All new features implemented and ready for testing."

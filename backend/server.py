@@ -543,6 +543,7 @@ async def get_dashboard_stats(current_user: User = Depends(get_current_user)):
     available_products = await db.products.count_documents({"status": ProductStatus.AVAILABLE})
     sold_products = await db.products.count_documents({"status": ProductStatus.SOLD})
     total_customers = await db.customers.count_documents({"is_active": True})
+    total_sources = await db.sources.count_documents({"is_active": True})
     total_transactions = await db.transactions.count_documents({})
     
     # Get recent transactions
@@ -562,9 +563,125 @@ async def get_dashboard_stats(current_user: User = Depends(get_current_user)):
         "available_products": available_products,
         "sold_products": sold_products,
         "total_customers": total_customers,
+        "total_sources": total_sources,
         "total_transactions": total_transactions,
         "total_revenue": total_revenue,
         "recent_transactions": [Transaction(**tx) for tx in recent_transactions]
+    }
+
+# Enhanced Detail Routes
+@api_router.get("/products/{product_id}/details")
+async def get_product_details(product_id: str, current_user: User = Depends(get_current_user)):
+    # Get product
+    product_doc = await db.products.find_one({"id": product_id})
+    if not product_doc:
+        raise HTTPException(status_code=404, detail="Product not found")
+    
+    product = Product(**product_doc)
+    
+    # Get source details if available
+    source = None
+    if product.source_id:
+        source_doc = await db.sources.find_one({"id": product.source_id})
+        if source_doc:
+            source = Source(**source_doc)
+    
+    # Get seller details if available (backward compatibility)
+    seller = None
+    if product.seller_id:
+        seller_doc = await db.customers.find_one({"id": product.seller_id})
+        if seller_doc:
+            seller = Customer(**seller_doc)
+    
+    # Get created by user
+    creator_doc = await db.users.find_one({"id": product.created_by})
+    creator = User(**{k: v for k, v in creator_doc.items() if k != 'password'}) if creator_doc else None
+    
+    # Get product logs
+    logs = await db.product_logs.find({"product_id": product_id}).sort("timestamp", -1).to_list(length=None)
+    product_logs = [ProductLog(**log) for log in logs]
+    
+    # Get transactions involving this product
+    transaction_items = await db.transaction_items.find({"product_id": product_id}).to_list(length=None)
+    transaction_ids = [item["transaction_id"] for item in transaction_items]
+    
+    transactions = []
+    if transaction_ids:
+        transaction_docs = await db.transactions.find({"id": {"$in": transaction_ids}}).to_list(length=None)
+        transactions = [Transaction(**tx) for tx in transaction_docs]
+    
+    return {
+        "product": product,
+        "source": source,
+        "seller": seller,  # For backward compatibility
+        "creator": creator,
+        "logs": product_logs,
+        "transactions": transactions
+    }
+
+@api_router.get("/transactions/{transaction_id}/details")
+async def get_transaction_details(transaction_id: str, current_user: User = Depends(get_current_user)):
+    # Get transaction
+    transaction_doc = await db.transactions.find_one({"id": transaction_id})
+    if not transaction_doc:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+    
+    transaction = Transaction(**transaction_doc)
+    
+    # Get customer details
+    customer_doc = await db.customers.find_one({"id": transaction.customer_id})
+    customer = Customer(**customer_doc) if customer_doc else None
+    
+    # Get created by user
+    creator_doc = await db.users.find_one({"id": transaction.created_by})
+    creator = User(**{k: v for k, v in creator_doc.items() if k != 'password'}) if creator_doc else None
+    
+    # Get transaction items with product details
+    transaction_items = await db.transaction_items.find({"transaction_id": transaction_id}).to_list(length=None)
+    
+    detailed_items = []
+    for item_doc in transaction_items:
+        item = TransactionItem(**item_doc)
+        
+        # Get product details for this item
+        product_doc = await db.products.find_one({"id": item.product_id})
+        product = Product(**product_doc) if product_doc else None
+        
+        detailed_items.append({
+            "item": item,
+            "product": product
+        })
+    
+    return {
+        "transaction": transaction,
+        "customer": customer,
+        "creator": creator,
+        "items": detailed_items
+    }
+
+@api_router.get("/customers/{customer_id}/details")
+async def get_customer_details(customer_id: str, current_user: User = Depends(get_current_user)):
+    # Get customer
+    customer_doc = await db.customers.find_one({"id": customer_id})
+    if not customer_doc:
+        raise HTTPException(status_code=404, detail="Customer not found")
+    
+    customer = Customer(**customer_doc)
+    
+    # Get transactions for this customer
+    transaction_docs = await db.transactions.find({"customer_id": customer_id}).sort("created_at", -1).to_list(length=None)
+    transactions = [Transaction(**tx) for tx in transaction_docs]
+    
+    # Calculate totals
+    total_purchases = sum(tx.total_amount for tx in transactions if tx.transaction_type == TransactionType.PURCHASE)
+    total_sales = sum(tx.total_amount for tx in transactions if tx.transaction_type == TransactionType.SALE)
+    
+    return {
+        "customer": customer,
+        "transactions": transactions,
+        "total_purchases": total_purchases,
+        "total_sales": total_sales,
+        "transaction_count": len(transactions)
     }
 
 # Product Logs Route

@@ -350,6 +350,39 @@ async def update_customer(customer_id: str, customer_create: CustomerCreate, cur
     updated_customer = await db.customers.find_one({"id": customer_id})
     return Customer(**updated_customer)
 
+# Source Routes
+@api_router.post("/sources", response_model=Source)
+async def create_source(source_create: SourceCreate, current_user: User = Depends(get_current_user)):
+    source = Source(**source_create.dict())
+    await db.sources.insert_one(source.dict())
+    return source
+
+@api_router.get("/sources", response_model=List[Source])
+async def get_sources(current_user: User = Depends(get_current_user)):
+    sources = await db.sources.find({"is_active": True}).to_list(length=None)
+    return [Source(**source) for source in sources]
+
+@api_router.get("/sources/{source_id}", response_model=Source)
+async def get_source(source_id: str, current_user: User = Depends(get_current_user)):
+    source_doc = await db.sources.find_one({"id": source_id})
+    if not source_doc:
+        raise HTTPException(status_code=404, detail="Source not found")
+    return Source(**source_doc)
+
+@api_router.put("/sources/{source_id}", response_model=Source)
+async def update_source(source_id: str, source_create: SourceCreate, current_user: User = Depends(get_current_user)):
+    source_doc = await db.sources.find_one({"id": source_id})
+    if not source_doc:
+        raise HTTPException(status_code=404, detail="Source not found")
+    
+    update_data = source_create.dict()
+    update_data['updated_at'] = datetime.now(timezone.utc)
+    
+    await db.sources.update_one({"id": source_id}, {"$set": update_data})
+    
+    updated_source = await db.sources.find_one({"id": source_id})
+    return Source(**updated_source)
+
 # Product Routes
 @api_router.post("/products", response_model=Product)
 async def create_product(product_create: ProductCreate, current_user: User = Depends(get_current_user)):

@@ -213,6 +213,78 @@ backend:
           agent: "testing"
           comment: "✅ Health check endpoint working correctly. Returns healthy status and timestamp."
 
+  - task: "Sources/Consigners Management"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "New feature implemented: Sources management with CRUD operations for different source types (consigner, estate_sale, auction, etc.). Needs comprehensive testing."
+
+  - task: "Enhanced Product Management with Source Integration"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Enhanced product creation with source_id field and multiple image handling (base64 arrays). Needs testing for source integration and image handling."
+
+  - task: "Enhanced Product Detail Endpoint"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "New endpoint /products/{id}/details returns comprehensive product info with source, creator, logs, and transactions. Needs testing."
+
+  - task: "Enhanced Customer Detail Endpoint"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "New endpoint /customers/{id}/details returns customer with transaction history and totals. Needs testing."
+
+  - task: "Enhanced Transaction Detail Endpoint"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "New endpoint /transactions/{id}/details returns transaction with customer, creator, and detailed items. Needs testing."
+
+  - task: "Updated Dashboard with Sources Count"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Dashboard now includes total_sources count. Needs testing to verify sources are included in dashboard stats."
+
 frontend:
   # Frontend testing not performed as per testing agent instructions
 

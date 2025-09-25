@@ -555,6 +555,423 @@ def test_audit_logging():
     results.add_pass("Product Logs")
     return True
 
+def test_sources_management():
+    """Test sources/consigners CRUD operations"""
+    global auth_token, test_source_id
+    
+    if not auth_token:
+        results.add_fail("Sources Management", "No auth token available")
+        return False
+    
+    headers = {'Authorization': f'Bearer {auth_token}'}
+    
+    # Test create source (consigner)
+    source_data = {
+        "name": "Elite Consignments Beverly Hills",
+        "source_type": "consigner",
+        "contact_person": "Margaret Thompson",
+        "email": "margaret@eliteconsignments.com",
+        "phone": "+1-310-555-0199",
+        "address": "9876 Rodeo Drive, Beverly Hills, CA 90210",
+        "commission_rate": 0.40,
+        "payment_terms": "Net 30 days",
+        "notes": "High-end luxury consigner, specializes in Hermès and Chanel"
+    }
+    
+    data, error = make_request('POST', '/sources', source_data, headers=headers)
+    if error:
+        results.add_fail("Create Source (Consigner)", error)
+        return False
+    
+    test_source_id = data['id']
+    if data['name'] != source_data['name']:
+        results.add_fail("Create Source (Consigner)", f"Name mismatch: {data['name']}")
+        return False
+    
+    if data['source_type'] != source_data['source_type']:
+        results.add_fail("Create Source (Consigner)", f"Source type mismatch: {data['source_type']}")
+        return False
+    
+    results.add_pass("Create Source (Consigner)")
+    
+    # Test create estate sale source
+    estate_source_data = {
+        "name": "Malibu Estate Sale Co.",
+        "source_type": "estate_sale",
+        "contact_person": "Robert Wilson",
+        "email": "robert@malibuestates.com",
+        "phone": "+1-310-555-0288",
+        "address": "12345 Pacific Coast Highway, Malibu, CA 90265",
+        "payment_terms": "Payment on delivery",
+        "notes": "Specializes in high-end estate liquidations"
+    }
+    
+    data, error = make_request('POST', '/sources', estate_source_data, headers=headers)
+    if error:
+        results.add_fail("Create Source (Estate Sale)", error)
+        return False
+    
+    results.add_pass("Create Source (Estate Sale)")
+    
+    # Test create auction source
+    auction_source_data = {
+        "name": "Christie's Beverly Hills",
+        "source_type": "auction",
+        "contact_person": "Sarah Mitchell",
+        "email": "sarah.mitchell@christies.com",
+        "phone": "+1-310-555-0377",
+        "address": "9830 Wilshire Blvd, Beverly Hills, CA 90212",
+        "payment_terms": "Immediate payment required",
+        "notes": "Premier auction house for luxury goods"
+    }
+    
+    data, error = make_request('POST', '/sources', auction_source_data, headers=headers)
+    if error:
+        results.add_fail("Create Source (Auction)", error)
+        return False
+    
+    results.add_pass("Create Source (Auction)")
+    
+    # Test get all sources
+    data, error = make_request('GET', '/sources', headers=headers)
+    if error:
+        results.add_fail("Get All Sources", error)
+        return False
+    
+    if not isinstance(data, list):
+        results.add_fail("Get All Sources", "Response is not a list")
+        return False
+    
+    if len(data) < 3:
+        results.add_fail("Get All Sources", f"Expected at least 3 sources, got {len(data)}")
+        return False
+    
+    results.add_pass("Get All Sources")
+    
+    # Test get specific source
+    data, error = make_request('GET', f'/sources/{test_source_id}', headers=headers)
+    if error:
+        results.add_fail("Get Source by ID", error)
+        return False
+    
+    if data['id'] != test_source_id:
+        results.add_fail("Get Source by ID", f"ID mismatch: {data['id']}")
+        return False
+    
+    results.add_pass("Get Source by ID")
+    
+    # Test update source
+    update_data = {
+        "name": "Elite Consignments Beverly Hills - Updated",
+        "source_type": "consigner",
+        "contact_person": "Margaret Thompson-Smith",
+        "email": "margaret@eliteconsignments.com",
+        "phone": "+1-310-555-0199",
+        "address": "9876 Rodeo Drive, Suite 200, Beverly Hills, CA 90210",
+        "commission_rate": 0.35,
+        "payment_terms": "Net 15 days",
+        "notes": "Updated terms - High-end luxury consigner"
+    }
+    
+    data, error = make_request('PUT', f'/sources/{test_source_id}', update_data, headers=headers)
+    if error:
+        results.add_fail("Update Source", error)
+        return False
+    
+    if data['name'] != update_data['name']:
+        results.add_fail("Update Source", f"Name not updated: {data['name']}")
+        return False
+    
+    if data['commission_rate'] != update_data['commission_rate']:
+        results.add_fail("Update Source", f"Commission rate not updated: {data['commission_rate']}")
+        return False
+    
+    results.add_pass("Update Source")
+    return True
+
+def test_enhanced_product_management():
+    """Test enhanced product management with source integration and multiple images"""
+    global auth_token, test_product_id, test_source_id
+    
+    if not auth_token or not test_source_id:
+        results.add_fail("Enhanced Product Management", "Missing required test data")
+        return False
+    
+    headers = {'Authorization': f'Bearer {auth_token}'}
+    
+    # Test create product with source_id and multiple images
+    product_data = {
+        "code": f"HER-{uuid.uuid4().hex[:8].upper()}",
+        "name": "Hermès Birkin 35cm Togo Leather",
+        "brand": "Hermès",
+        "category": "Handbags",
+        "condition": "excellent",
+        "purchase_price": 8500.00,
+        "selling_price": 12500.00,
+        "description": "Authentic Hermès Birkin 35cm in Etoupe Togo leather with palladium hardware",
+        "images": [
+            "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k=",
+            "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k="
+        ],
+        "source_id": test_source_id
+    }
+    
+    data, error = make_request('POST', '/products', product_data, headers=headers)
+    if error:
+        results.add_fail("Create Product with Source", error)
+        return False
+    
+    test_product_id = data['id']
+    if data['code'] != product_data['code']:
+        results.add_fail("Create Product with Source", f"Code mismatch: {data['code']}")
+        return False
+    
+    if data['source_id'] != test_source_id:
+        results.add_fail("Create Product with Source", f"Source ID mismatch: {data['source_id']}")
+        return False
+    
+    if len(data['images']) != 2:
+        results.add_fail("Create Product with Source", f"Expected 2 images, got {len(data['images'])}")
+        return False
+    
+    results.add_pass("Create Product with Source")
+    
+    # Test update product with new images
+    update_data = {
+        "code": product_data['code'],
+        "name": "Hermès Birkin 35cm Togo Leather - Authenticated",
+        "brand": "Hermès",
+        "category": "Handbags",
+        "condition": "excellent",
+        "purchase_price": 8500.00,
+        "selling_price": 13000.00,
+        "description": "Updated - Authentic Hermès Birkin with authentication certificate",
+        "images": [
+            "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k=",
+            "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k=",
+            "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k="
+        ],
+        "source_id": test_source_id
+    }
+    
+    data, error = make_request('PUT', f'/products/{test_product_id}', update_data, headers=headers)
+    if error:
+        results.add_fail("Update Product with Images", error)
+        return False
+    
+    if data['name'] != update_data['name']:
+        results.add_fail("Update Product with Images", f"Name not updated: {data['name']}")
+        return False
+    
+    if len(data['images']) != 3:
+        results.add_fail("Update Product with Images", f"Expected 3 images, got {len(data['images'])}")
+        return False
+    
+    results.add_pass("Update Product with Images")
+    return True
+
+def test_enhanced_detail_endpoints():
+    """Test enhanced detail endpoints for products, customers, and transactions"""
+    global auth_token, test_product_id, test_customer_id, test_transaction_id, test_source_id
+    
+    if not auth_token or not test_product_id or not test_customer_id:
+        results.add_fail("Enhanced Detail Endpoints", "Missing required test data")
+        return False
+    
+    headers = {'Authorization': f'Bearer {auth_token}'}
+    
+    # Test enhanced product details endpoint
+    data, error = make_request('GET', f'/products/{test_product_id}/details', headers=headers)
+    if error:
+        results.add_fail("Product Details Endpoint", error)
+        return False
+    
+    # Verify response structure
+    required_fields = ['product', 'source', 'creator', 'logs', 'transactions']
+    for field in required_fields:
+        if field not in data:
+            results.add_fail("Product Details Endpoint", f"Missing field: {field}")
+            return False
+    
+    # Verify product data
+    if data['product']['id'] != test_product_id:
+        results.add_fail("Product Details Endpoint", f"Product ID mismatch: {data['product']['id']}")
+        return False
+    
+    # Verify source data is included
+    if data['source'] and data['source']['id'] != test_source_id:
+        results.add_fail("Product Details Endpoint", f"Source ID mismatch: {data['source']['id']}")
+        return False
+    
+    # Verify creator data
+    if not data['creator'] or 'id' not in data['creator']:
+        results.add_fail("Product Details Endpoint", "Creator data missing or invalid")
+        return False
+    
+    # Verify logs are present
+    if not isinstance(data['logs'], list):
+        results.add_fail("Product Details Endpoint", "Logs should be a list")
+        return False
+    
+    results.add_pass("Product Details Endpoint")
+    
+    # Test enhanced customer details endpoint
+    data, error = make_request('GET', f'/customers/{test_customer_id}/details', headers=headers)
+    if error:
+        results.add_fail("Customer Details Endpoint", error)
+        return False
+    
+    # Verify response structure
+    required_fields = ['customer', 'transactions', 'total_purchases', 'total_sales', 'transaction_count']
+    for field in required_fields:
+        if field not in data:
+            results.add_fail("Customer Details Endpoint", f"Missing field: {field}")
+            return False
+    
+    # Verify customer data
+    if data['customer']['id'] != test_customer_id:
+        results.add_fail("Customer Details Endpoint", f"Customer ID mismatch: {data['customer']['id']}")
+        return False
+    
+    # Verify transactions list
+    if not isinstance(data['transactions'], list):
+        results.add_fail("Customer Details Endpoint", "Transactions should be a list")
+        return False
+    
+    # Verify totals are numbers
+    if not isinstance(data['total_purchases'], (int, float)):
+        results.add_fail("Customer Details Endpoint", "total_purchases should be a number")
+        return False
+    
+    if not isinstance(data['total_sales'], (int, float)):
+        results.add_fail("Customer Details Endpoint", "total_sales should be a number")
+        return False
+    
+    results.add_pass("Customer Details Endpoint")
+    
+    # Create a transaction first if we don't have one
+    if not test_transaction_id:
+        # Reset product status to available for transaction
+        make_request('PUT', f'/products/{test_product_id}/status?status=available', headers=headers)
+        
+        transaction_data = {
+            "transaction_type": "sale",
+            "customer_id": test_customer_id,
+            "payment_method": "Credit Card",
+            "shipping_method": "Express Delivery",
+            "notes": "Test transaction for enhanced details",
+            "items": [
+                {
+                    "product_id": test_product_id,
+                    "quantity": 1,
+                    "unit_price": 13000.00
+                }
+            ]
+        }
+        
+        tx_data, tx_error = make_request('POST', '/transactions', transaction_data, headers=headers)
+        if tx_error:
+            results.add_fail("Create Transaction for Details Test", tx_error)
+            return False
+        
+        test_transaction_id = tx_data['id']
+    
+    # Test enhanced transaction details endpoint
+    data, error = make_request('GET', f'/transactions/{test_transaction_id}/details', headers=headers)
+    if error:
+        results.add_fail("Transaction Details Endpoint", error)
+        return False
+    
+    # Verify response structure
+    required_fields = ['transaction', 'customer', 'creator', 'items']
+    for field in required_fields:
+        if field not in data:
+            results.add_fail("Transaction Details Endpoint", f"Missing field: {field}")
+            return False
+    
+    # Verify transaction data
+    if data['transaction']['id'] != test_transaction_id:
+        results.add_fail("Transaction Details Endpoint", f"Transaction ID mismatch: {data['transaction']['id']}")
+        return False
+    
+    # Verify customer data
+    if not data['customer'] or data['customer']['id'] != test_customer_id:
+        results.add_fail("Transaction Details Endpoint", "Customer data missing or invalid")
+        return False
+    
+    # Verify creator data
+    if not data['creator'] or 'id' not in data['creator']:
+        results.add_fail("Transaction Details Endpoint", "Creator data missing or invalid")
+        return False
+    
+    # Verify items with product details
+    if not isinstance(data['items'], list) or len(data['items']) == 0:
+        results.add_fail("Transaction Details Endpoint", "Items should be a non-empty list")
+        return False
+    
+    # Check first item structure
+    first_item = data['items'][0]
+    if 'item' not in first_item or 'product' not in first_item:
+        results.add_fail("Transaction Details Endpoint", "Item should contain 'item' and 'product' fields")
+        return False
+    
+    results.add_pass("Transaction Details Endpoint")
+    return True
+
+def test_updated_dashboard():
+    """Test updated dashboard with sources count"""
+    global auth_token
+    
+    if not auth_token:
+        results.add_fail("Updated Dashboard", "No auth token available")
+        return False
+    
+    headers = {'Authorization': f'Bearer {auth_token}'}
+    
+    data, error = make_request('GET', '/dashboard/stats', headers=headers)
+    if error:
+        results.add_fail("Updated Dashboard Stats", error)
+        return False
+    
+    # Verify required fields including new total_sources
+    required_fields = [
+        'total_products', 'available_products', 'sold_products',
+        'total_customers', 'total_sources', 'total_transactions', 
+        'total_revenue', 'recent_transactions'
+    ]
+    
+    for field in required_fields:
+        if field not in data:
+            results.add_fail("Updated Dashboard Stats", f"Missing field: {field}")
+            return False
+    
+    # Verify total_sources is present and is a number
+    if not isinstance(data['total_sources'], int):
+        results.add_fail("Updated Dashboard Stats", f"total_sources should be an integer, got {type(data['total_sources'])}")
+        return False
+    
+    # We should have at least 3 sources from our tests
+    if data['total_sources'] < 3:
+        results.add_fail("Updated Dashboard Stats", f"Expected at least 3 sources, got {data['total_sources']}")
+        return False
+    
+    # Verify other fields are still working
+    if not isinstance(data['recent_transactions'], list):
+        results.add_fail("Updated Dashboard Stats", "recent_transactions is not a list")
+        return False
+    
+    # Verify we have data from our tests
+    if data['total_products'] < 1:
+        results.add_fail("Updated Dashboard Stats", f"Expected at least 1 product, got {data['total_products']}")
+        return False
+    
+    if data['total_customers'] < 1:
+        results.add_fail("Updated Dashboard Stats", f"Expected at least 1 customer, got {data['total_customers']}")
+        return False
+    
+    results.add_pass("Updated Dashboard Stats")
+    return True
+
 def test_error_handling():
     """Test error handling and validation"""
     global auth_token

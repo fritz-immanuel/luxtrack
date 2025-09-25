@@ -66,6 +66,14 @@ class TransactionStatus(str, Enum):
     CANCELLED = "cancelled"
     REFUNDED = "refunded"
 
+class SourceType(str, Enum):
+    CONSIGNER = "consigner"
+    ESTATE_SALE = "estate_sale"
+    AUCTION = "auction"
+    PRIVATE_SELLER = "private_seller"
+    WHOLESALE = "wholesale"
+    OTHER = "other"
+
 # Models
 class User(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))

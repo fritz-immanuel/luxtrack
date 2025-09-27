@@ -18,9 +18,10 @@ ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
 # MongoDB connection
-mongo_url = os.environ['MONGO_URL']
-client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ['DB_NAME']]
+mongo_url = os.environ.get('MONGO_URL', 'mongodb://127.0.0.1:27017')
+# set a short serverSelectionTimeoutMS to fail fast in dev if Mongo isn't available
+client = AsyncIOMotorClient(mongo_url, serverSelectionTimeoutMS=5000)
+db = client[os.environ.get('DB_NAME', 'luxtrack')]
 
 # JWT Configuration
 JWT_SECRET = os.environ.get('JWT_SECRET', 'luxtrack-super-secret-key-change-in-production')
@@ -716,7 +717,16 @@ logger = logging.getLogger(__name__)
 @app.on_event("startup")
 async def startup_event():
     logger.info("LuxTrack MVP Server starting up...")
-    
+
+    # Verify Mongo connectivity (ping). If this fails, we raise so the process does not start silently.
+    try:
+        await client.admin.command("ping")
+        logger.info("MongoDB connection: OK")
+    except Exception as e:
+        logger.exception("Cannot connect to MongoDB. Check MONGO_URL and that the Mongo daemon is running.")
+        # Raise to stop the app from starting with a broken DB connection
+        raise
+
     # Create default admin user if none exists
     admin_count = await db.users.count_documents({"role": UserRole.ADMIN})
     if admin_count == 0:

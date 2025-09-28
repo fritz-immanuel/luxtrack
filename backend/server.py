@@ -1,7 +1,7 @@
 from fastapi import FastAPI, APIRouter, HTTPException, Depends, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
-from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
@@ -240,15 +240,15 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         payload = jwt.decode(credentials.credentials, JWT_SECRET, algorithms=[JWT_ALGORITHM])
         if payload.get("type") != "access":
             raise HTTPException(status_code=401, detail="Invalid token type")
-        
+
         user_id = payload.get("sub")
         if user_id is None:
             raise HTTPException(status_code=401, detail="Invalid token")
-        
+
         user_doc = await db.users.find_one({"id": user_id})
         if user_doc is None:
             raise HTTPException(status_code=401, detail="User not found")
-        
+
         return User(**user_doc)
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token expired")
@@ -280,12 +280,12 @@ async def register(user_create: UserCreate, current_user: User = Depends(get_adm
     existing_user = await db.users.find_one({"email": user_create.email})
     if existing_user:
         raise HTTPException(status_code=400, detail="Email already registered")
-    
+
     # Create user
     user_dict = user_create.dict()
     user_dict['password'] = hash_password(user_create.password)
     user = User(**{k: v for k, v in user_dict.items() if k != 'password'})
-    
+
     await db.users.insert_one({**user.dict(), 'password': user_dict['password']})
     return user
 
@@ -295,13 +295,13 @@ async def login(user_login: UserLogin):
     user_doc = await db.users.find_one({"email": user_login.email})
     if not user_doc or not verify_password(user_login.password, user_doc['password']):
         raise HTTPException(status_code=401, detail="Invalid credentials")
-    
+
     user = User(**{k: v for k, v in user_doc.items() if k != 'password'})
-    
+
     # Create tokens
     access_token = create_access_token({"sub": user.id})
     refresh_token = create_refresh_token({"sub": user.id})
-    
+
     return TokenResponse(
         access_token=access_token,
         refresh_token=refresh_token,
@@ -342,12 +342,12 @@ async def update_customer(customer_id: str, customer_create: CustomerCreate, cur
     customer_doc = await db.customers.find_one({"id": customer_id})
     if not customer_doc:
         raise HTTPException(status_code=404, detail="Customer not found")
-    
+
     update_data = customer_create.dict()
     update_data['updated_at'] = datetime.now(timezone.utc)
-    
+
     await db.customers.update_one({"id": customer_id}, {"$set": update_data})
-    
+
     updated_customer = await db.customers.find_one({"id": customer_id})
     return Customer(**updated_customer)
 
@@ -375,12 +375,12 @@ async def update_source(source_id: str, source_create: SourceCreate, current_use
     source_doc = await db.sources.find_one({"id": source_id})
     if not source_doc:
         raise HTTPException(status_code=404, detail="Source not found")
-    
+
     update_data = source_create.dict()
     update_data['updated_at'] = datetime.now(timezone.utc)
-    
+
     await db.sources.update_one({"id": source_id}, {"$set": update_data})
-    
+
     updated_source = await db.sources.find_one({"id": source_id})
     return Source(**updated_source)
 
@@ -391,16 +391,16 @@ async def create_product(product_create: ProductCreate, current_user: User = Dep
     existing_product = await db.products.find_one({"code": product_create.code})
     if existing_product:
         raise HTTPException(status_code=400, detail="Product code already exists")
-    
+
     product_dict = product_create.dict()
     product_dict['created_by'] = current_user.id
     product = Product(**product_dict)
-    
+
     await db.products.insert_one(product.dict())
-    
+
     # Log the creation
     await log_product_action(product.id, "created", current_user.id, new_value=product.dict())
-    
+
     return product
 
 @api_router.get("/products", response_model=List[Product])
@@ -420,20 +420,20 @@ async def update_product(product_id: str, product_create: ProductCreate, current
     product_doc = await db.products.find_one({"id": product_id})
     if not product_doc:
         raise HTTPException(status_code=404, detail="Product not found")
-    
+
     old_product = Product(**product_doc)
-    
+
     update_data = product_create.dict()
     update_data['updated_at'] = datetime.now(timezone.utc)
-    
+
     await db.products.update_one({"id": product_id}, {"$set": update_data})
-    
+
     updated_product_doc = await db.products.find_one({"id": product_id})
     updated_product = Product(**updated_product_doc)
-    
+
     # Log the update
     await log_product_action(product_id, "updated", current_user.id, old_value=old_product.dict(), new_value=updated_product.dict())
-    
+
     return updated_product
 
 @api_router.put("/products/{product_id}/status", response_model=Product)
@@ -441,23 +441,23 @@ async def update_product_status(product_id: str, status: ProductStatus, current_
     product_doc = await db.products.find_one({"id": product_id})
     if not product_doc:
         raise HTTPException(status_code=404, detail="Product not found")
-    
+
     old_status = product_doc['status']
     update_data = {
         'status': status,
         'updated_at': datetime.now(timezone.utc)
     }
-    
+
     await db.products.update_one({"id": product_id}, {"$set": update_data})
-    
+
     updated_product_doc = await db.products.find_one({"id": product_id})
     updated_product = Product(**updated_product_doc)
-    
+
     # Log the status change
-    await log_product_action(product_id, "status_changed", current_user.id, 
-                           old_value={"status": old_status}, 
+    await log_product_action(product_id, "status_changed", current_user.id,
+                           old_value={"status": old_status},
                            new_value={"status": status})
-    
+
     return updated_product
 
 # Transaction Routes
@@ -467,24 +467,24 @@ async def create_transaction(transaction_create: TransactionCreate, current_user
     customer_doc = await db.customers.find_one({"id": transaction_create.customer_id})
     if not customer_doc:
         raise HTTPException(status_code=404, detail="Customer not found")
-    
+
     # Calculate total amount and verify products
     total_amount = 0
     transaction_items = []
-    
+
     for item_data in transaction_create.items:
         product_doc = await db.products.find_one({"id": item_data["product_id"]})
         if not product_doc:
             raise HTTPException(status_code=404, detail=f"Product {item_data['product_id']} not found")
-        
+
         if product_doc['status'] != ProductStatus.AVAILABLE and transaction_create.transaction_type == TransactionType.SALE:
             raise HTTPException(status_code=400, detail=f"Product {product_doc['code']} is not available for sale")
-        
+
         quantity = item_data.get("quantity", 1)
         unit_price = item_data["unit_price"]
         total_price = quantity * unit_price
         total_amount += total_price
-        
+
         transaction_item = TransactionItem(
             product_id=item_data["product_id"],
             quantity=quantity,
@@ -493,30 +493,30 @@ async def create_transaction(transaction_create: TransactionCreate, current_user
             transaction_id=""  # Will be set after transaction creation
         )
         transaction_items.append(transaction_item)
-    
+
     # Create transaction
     transaction_dict = transaction_create.dict()
     transaction_dict['total_amount'] = total_amount
     transaction_dict['created_by'] = current_user.id
     transaction_dict.pop('items')  # Remove items from transaction dict
-    
+
     transaction = Transaction(**transaction_dict)
     await db.transactions.insert_one(transaction.dict())
-    
+
     # Create transaction items and update product statuses
     for item in transaction_items:
         item.transaction_id = transaction.id
         await db.transaction_items.insert_one(item.dict())
-        
+
         # Update product status based on transaction type
         if transaction_create.transaction_type == TransactionType.SALE:
             await db.products.update_one(
-                {"id": item.product_id}, 
+                {"id": item.product_id},
                 {"$set": {"status": ProductStatus.SOLD, "updated_at": datetime.now(timezone.utc)}}
             )
-            await log_product_action(item.product_id, "sold", current_user.id, 
+            await log_product_action(item.product_id, "sold", current_user.id,
                                    new_value={"transaction_id": transaction.id})
-    
+
     return transaction
 
 @api_router.get("/transactions", response_model=List[Transaction])
@@ -546,19 +546,19 @@ async def get_dashboard_stats(current_user: User = Depends(get_current_user)):
     total_customers = await db.customers.count_documents({"is_active": True})
     total_sources = await db.sources.count_documents({"is_active": True})
     total_transactions = await db.transactions.count_documents({})
-    
+
     # Get recent transactions
     recent_transactions = await db.transactions.find().sort("created_at", -1).limit(5).to_list(length=None)
-    
+
     # Calculate revenue (completed sales only)
     sales_pipeline = [
         {"$match": {"transaction_type": TransactionType.SALE, "status": TransactionStatus.COMPLETED}},
         {"$group": {"_id": None, "total_revenue": {"$sum": "$total_amount"}}}
     ]
-    
+
     revenue_result = await db.transactions.aggregate(sales_pipeline).to_list(length=None)
     total_revenue = revenue_result[0]['total_revenue'] if revenue_result else 0
-    
+
     return {
         "total_products": total_products,
         "available_products": available_products,
@@ -577,40 +577,40 @@ async def get_product_details(product_id: str, current_user: User = Depends(get_
     product_doc = await db.products.find_one({"id": product_id})
     if not product_doc:
         raise HTTPException(status_code=404, detail="Product not found")
-    
+
     product = Product(**product_doc)
-    
+
     # Get source details if available
     source = None
     if product.source_id:
         source_doc = await db.sources.find_one({"id": product.source_id})
         if source_doc:
             source = Source(**source_doc)
-    
+
     # Get seller details if available (backward compatibility)
     seller = None
     if product.seller_id:
         seller_doc = await db.customers.find_one({"id": product.seller_id})
         if seller_doc:
             seller = Customer(**seller_doc)
-    
+
     # Get created by user
     creator_doc = await db.users.find_one({"id": product.created_by})
     creator = User(**{k: v for k, v in creator_doc.items() if k != 'password'}) if creator_doc else None
-    
+
     # Get product logs
     logs = await db.product_logs.find({"product_id": product_id}).sort("timestamp", -1).to_list(length=None)
     product_logs = [ProductLog(**log) for log in logs]
-    
+
     # Get transactions involving this product
     transaction_items = await db.transaction_items.find({"product_id": product_id}).to_list(length=None)
     transaction_ids = [item["transaction_id"] for item in transaction_items]
-    
+
     transactions = []
     if transaction_ids:
         transaction_docs = await db.transactions.find({"id": {"$in": transaction_ids}}).to_list(length=None)
         transactions = [Transaction(**tx) for tx in transaction_docs]
-    
+
     return {
         "product": product,
         "source": source,
@@ -626,33 +626,33 @@ async def get_transaction_details(transaction_id: str, current_user: User = Depe
     transaction_doc = await db.transactions.find_one({"id": transaction_id})
     if not transaction_doc:
         raise HTTPException(status_code=404, detail="Transaction not found")
-    
+
     transaction = Transaction(**transaction_doc)
-    
+
     # Get customer details
     customer_doc = await db.customers.find_one({"id": transaction.customer_id})
     customer = Customer(**customer_doc) if customer_doc else None
-    
+
     # Get created by user
     creator_doc = await db.users.find_one({"id": transaction.created_by})
     creator = User(**{k: v for k, v in creator_doc.items() if k != 'password'}) if creator_doc else None
-    
+
     # Get transaction items with product details
     transaction_items = await db.transaction_items.find({"transaction_id": transaction_id}).to_list(length=None)
-    
+
     detailed_items = []
     for item_doc in transaction_items:
         item = TransactionItem(**item_doc)
-        
+
         # Get product details for this item
         product_doc = await db.products.find_one({"id": item.product_id})
         product = Product(**product_doc) if product_doc else None
-        
+
         detailed_items.append({
             "item": item,
             "product": product
         })
-    
+
     return {
         "transaction": transaction,
         "customer": customer,
@@ -666,17 +666,17 @@ async def get_customer_details(customer_id: str, current_user: User = Depends(ge
     customer_doc = await db.customers.find_one({"id": customer_id})
     if not customer_doc:
         raise HTTPException(status_code=404, detail="Customer not found")
-    
+
     customer = Customer(**customer_doc)
-    
+
     # Get transactions for this customer
     transaction_docs = await db.transactions.find({"customer_id": customer_id}).sort("created_at", -1).to_list(length=None)
     transactions = [Transaction(**tx) for tx in transaction_docs]
-    
+
     # Calculate totals
     total_purchases = sum(tx.total_amount for tx in transactions if tx.transaction_type == TransactionType.PURCHASE)
     total_sales = sum(tx.total_amount for tx in transactions if tx.transaction_type == TransactionType.SALE)
-    
+
     return {
         "customer": customer,
         "transactions": transactions,
@@ -699,20 +699,36 @@ async def health_check():
 # Include the router in the main app
 app.include_router(api_router)
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_credentials=True,
-    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+# -------------------------
+# CORS origins parsing
+# -------------------------
+_raw = os.environ.get("CORS_ORIGINS", "")
+# split by comma, strip whitespace, remove empties
+ALLOWED_ORIGINS = [o.strip() for o in _raw.split(",") if o.strip()]
+
+if not ALLOWED_ORIGINS:
+    log.warning("CORS_ORIGINS not set or empty. No origins will be allowed for cross-origin requests.")
+else:
+    log.info("CORS allowed origins: %s", ALLOWED_ORIGINS)
+
+if "*" in ALLOWED_ORIGINS:
+    log.warning('CORS_ORIGINS contains "*". This is not allowed when allow_credentials=True. Removing "*".')
+    ALLOWED_ORIGINS = [o for o in ALLOWED_ORIGINS if o != "*"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.on_event("startup")
 async def startup_event():

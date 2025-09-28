@@ -2,6 +2,11 @@ import React, { useState, useEffect, createContext, useContext } from 'react';
 import './App.css';
 import axios from 'axios';
 
+axios.defaults.baseURL = API;
+axios.defaults.withCredentials = true;
+axios.defaults.headers.common['Accept'] = 'application/json';
+axios.defaults.headers.common['Content-Type'] = 'application/json';
+
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://127.0.0.1:8000';
 const API = `${BACKEND_URL.replace(/\/$/, '')}/api`;
 
@@ -26,7 +31,7 @@ const AuthProvider = ({ children }) => {
 
   const fetchUserInfo = async () => {
     try {
-      const response = await axios.get(`${API}/users/me`);
+      const response = await axios.get('/users/me', { withCredentials: true });
       setUser(response.data);
     } catch (error) {
       console.error('Failed to fetch user info:', error);
@@ -38,18 +43,18 @@ const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const response = await axios.post(`${API}/auth/login`, { email, password });
+      const response = await axios.post('/auth/login', { email, password }, { withCredentials: true });
       const { access_token, user: userData } = response.data;
-      
+
       localStorage.setItem('access_token', access_token);
-      axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
+      axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`; // global header
       setUser(userData);
-      
+
       return { success: true };
     } catch (error) {
-      return { 
-        success: false, 
-        error: error.response?.data?.detail || 'Login failed' 
+      return {
+        success: false,
+        error: error.response?.data?.detail || 'Login failed'
       };
     }
   };
@@ -107,7 +112,7 @@ const ImageUpload = ({ images, onChange }) => {
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
     const maxFiles = 10;
-    
+
     if (files.length > maxFiles) {
       alert(`Maximum ${maxFiles} images allowed`);
       return;
@@ -136,7 +141,7 @@ const ImageUpload = ({ images, onChange }) => {
   return (
     <div>
       <label className="block text-sm font-medium text-gray-700 mb-2">Images</label>
-      
+
       {/* Upload Area */}
       <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center mb-4">
         <input
@@ -361,7 +366,7 @@ const Dashboard = () => {
   return (
     <div className="p-6">
       <h2 className="text-2xl font-bold text-gray-900 mb-6">Dashboard</h2>
-      
+
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
         <div className="bg-white p-6 rounded-lg shadow-sm border">
@@ -447,7 +452,7 @@ const Dashboard = () => {
                 <div key={transaction.id} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-b-0 cursor-pointer hover:bg-gray-50 rounded px-2">
                   <div>
                     <p className="text-sm font-medium text-gray-900">
-                      {transaction.transaction_type.charAt(0).toUpperCase() + transaction.transaction_type.slice(1)} - 
+                      {transaction.transaction_type.charAt(0).toUpperCase() + transaction.transaction_type.slice(1)} -
                       ${transaction.total_amount.toFixed(2)}
                     </p>
                     <p className="text-xs text-gray-500">
@@ -536,8 +541,8 @@ const Products = () => {
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {products.map((product) => (
-              <tr 
-                key={product.id} 
+              <tr
+                key={product.id}
                 className="hover:bg-gray-50 cursor-pointer"
                 onClick={() => handleProductClick(product)}
               >
@@ -599,7 +604,7 @@ const ProductDetailView = ({ product }) => {
             )}
           </div>
         </div>
-        
+
         <div>
           <h3 className="font-semibold text-gray-900 mb-2">Source Information</h3>
           {product.source ? (
@@ -730,7 +735,7 @@ const ProductForm = ({ onSuccess, onCancel }) => {
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm border mb-6">
       <h3 className="text-lg font-medium text-gray-900 mb-4">Add New Product</h3>
-      
+
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
           {error}
@@ -941,8 +946,8 @@ const Customers = () => {
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {customers.map((customer) => (
-              <tr 
-                key={customer.id} 
+              <tr
+                key={customer.id}
                 className="hover:bg-gray-50 cursor-pointer"
                 onClick={() => handleCustomerClick(customer)}
               >
@@ -1015,8 +1020,8 @@ const CustomerDetailView = ({ customer }) => {
                     {tx.transaction_type.charAt(0).toUpperCase() + tx.transaction_type.slice(1)} - ${tx.total_amount}
                   </span>
                   <span className={`px-2 py-1 text-xs rounded ${
-                    tx.status === 'completed' ? 'bg-green-100 text-green-800' : 
-                    tx.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
+                    tx.status === 'completed' ? 'bg-green-100 text-green-800' :
+                    tx.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                     'bg-gray-100 text-gray-800'
                   }`}>
                     {tx.status}
@@ -1078,7 +1083,7 @@ const CustomerForm = ({ onSuccess, onCancel }) => {
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm border mb-6">
       <h3 className="text-lg font-medium text-gray-900 mb-4">Add New Customer</h3>
-      
+
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
           {error}
@@ -1295,7 +1300,7 @@ const SourceForm = ({ onSuccess, onCancel }) => {
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm border mb-6">
       <h3 className="text-lg font-medium text-gray-900 mb-4">Add New Source</h3>
-      
+
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
           {error}
@@ -1481,12 +1486,12 @@ const Transactions = () => {
       </div>
 
       {showTransactionForm && (
-        <TransactionForm 
-          onSuccess={() => { 
-            fetchTransactions(); 
-            setShowTransactionForm(false); 
-          }} 
-          onCancel={() => setShowTransactionForm(false)} 
+        <TransactionForm
+          onSuccess={() => {
+            fetchTransactions();
+            setShowTransactionForm(false);
+          }}
+          onCancel={() => setShowTransactionForm(false)}
         />
       )}
 
@@ -1503,8 +1508,8 @@ const Transactions = () => {
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {transactions.map((transaction) => (
-              <tr 
-                key={transaction.id} 
+              <tr
+                key={transaction.id}
                 className="hover:bg-gray-50 cursor-pointer"
                 onClick={() => handleTransactionClick(transaction)}
               >
@@ -1571,7 +1576,7 @@ const TransactionDetailView = ({ transaction }) => {
             <p><span className="font-medium">Created:</span> {new Date(transaction.transaction.created_at).toLocaleDateString()}</p>
           </div>
         </div>
-        
+
         <div>
           <h3 className="font-semibold text-gray-900 mb-2">Customer Information</h3>
           {transaction.customer ? (
@@ -1680,16 +1685,16 @@ const TransactionForm = ({ onSuccess, onCancel }) => {
 
   const updateProductItem = (index, field, value) => {
     const updated = [...selectedProducts];
-    updated[index][field] = field === 'quantity' ? parseInt(value) || 1 : 
+    updated[index][field] = field === 'quantity' ? parseInt(value) || 1 :
                            field === 'unit_price' ? parseFloat(value) || 0 : value;
-    
+
     if (field === 'product_id') {
       const product = products.find(p => p.id === value);
       if (product) {
         updated[index].unit_price = product.selling_price || product.purchase_price;
       }
     }
-    
+
     setSelectedProducts(updated);
   };
 
@@ -1741,7 +1746,7 @@ const TransactionForm = ({ onSuccess, onCancel }) => {
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm border mb-6">
       <h3 className="text-lg font-medium text-gray-900 mb-4">Add New Transaction</h3>
-      
+
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
           {error}

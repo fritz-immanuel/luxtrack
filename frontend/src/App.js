@@ -2,13 +2,13 @@ import React, { useState, useEffect, createContext, useContext } from 'react';
 import './App.css';
 import axios from 'axios';
 
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://127.0.0.1:8000';
+const API = `${BACKEND_URL.replace(/\/$/, '')}/api`;
+
 axios.defaults.baseURL = API;
 axios.defaults.withCredentials = true;
 axios.defaults.headers.common['Accept'] = 'application/json';
 axios.defaults.headers.common['Content-Type'] = 'application/json';
-
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://127.0.0.1:8000';
-const API = `${BACKEND_URL.replace(/\/$/, '')}/api`;
 
 // Create Auth Context
 const AuthContext = createContext();

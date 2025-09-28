@@ -709,17 +709,20 @@ logger = logging.getLogger(__name__)
 # -------------------------
 # CORS origins parsing
 # -------------------------
-_raw = os.environ.get("CORS_ORIGINS", "")
-# split by comma, strip whitespace, remove empties
+_raw = os.getenv("CORS_ORIGINS", "")
 ALLOWED_ORIGINS = [o.strip() for o in _raw.split(",") if o.strip()]
 
 if not ALLOWED_ORIGINS:
-    log.warning("CORS_ORIGINS not set or empty. No origins will be allowed for cross-origin requests.")
+    logger.warning(
+        "CORS_ORIGINS is not set or empty. No origins will be allowed for cross-origin requests."
+    )
 else:
-    log.info("CORS allowed origins: %s", ALLOWED_ORIGINS)
+    logger.info("CORS allowed origins: %s", ALLOWED_ORIGINS)
 
-if "*" in ALLOWED_ORIGINS:
-    log.warning('CORS_ORIGINS contains "*". This is not allowed when allow_credentials=True. Removing "*".')
+if "*" in ALLOWED_ORIGINS and True:  # because allow_credentials=True
+    logger.warning(
+        'CORS_ORIGINS contains "*". Browsers reject wildcard when allow_credentials=True. Removing it.'
+    )
     ALLOWED_ORIGINS = [o for o in ALLOWED_ORIGINS if o != "*"]
 
 app.add_middleware(

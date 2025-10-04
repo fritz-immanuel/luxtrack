@@ -4,7 +4,7 @@ uvicorn==0.25.0
 # async DB stack (databases + async driver for MySQL)
 databases[mysql]==0.9.0
 SQLAlchemy==2.0.43
-asyncmy==0.3.3
+asyncmy==0.2.10
 PyMySQL==1.1.0
 
 # auth / misc
